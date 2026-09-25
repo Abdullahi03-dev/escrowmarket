@@ -1,0 +1,15 @@
+# dependencies
+/node_modules
+
+# build
+/dist
+
+# env files — DATABASE_URL is a live secret, never commit
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
+npm-debug.log*
+coverage/

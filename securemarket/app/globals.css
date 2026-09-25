@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fafafa;
+  --foreground: #0a0a0a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bricolage);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #0a0a0a;
+  color: #fafafa;
+}
+
+.mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Section eyebrows — tracked sans, not mono */
+.eyebrow {
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* Subtle escrow status pulse — slow, understated */
+@keyframes escrow-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.escrow-live {
+  animation: escrow-pulse 2.4s ease-in-out infinite;
+}
+
+/* Elegant step progression in the hero */
+@keyframes escrow-step {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.escrow-step {
+  animation: escrow-step 3.2s ease-in-out infinite;
+}
+
+/* Fine grid backdrop for editorial sections */
+.blueprint {
+  background-image:
+    linear-gradient(to right, rgb(0 0 0 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+.blueprint-dark {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
