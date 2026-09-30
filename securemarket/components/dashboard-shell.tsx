@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ApiUser } from '@/lib/api';
+import { Logo } from './logo';
 
 export type DashSection = 'overview' | 'transactions' | 'payouts' | 'profile' | 'security' | 'admin';
 
@@ -60,13 +61,8 @@ export function DashboardShell({
   const sidebar = (
     <div className="flex h-full flex-col bg-white">
       <Link href="/" className="flex items-center gap-3 px-5 pb-6 pt-6" onClick={() => setOpen(false)}>
-        <span className="flex h-8 w-8 items-center justify-center bg-neutral-950 font-mono text-[14px] font-bold text-white">
-          S
-        </span>
-        <span>
-          <span className="block text-[15px] font-semibold leading-tight tracking-tight">SecureMarket</span>
-          <span className="mono block text-[9.5px] tracking-[0.24em] text-neutral-400">ESCROW</span>
-        </span>
+        <Logo size={32} />
+        <span className="mono block text-[9.5px] tracking-[0.24em] text-neutral-400">ESCROW</span>
       </Link>
 
       <p className="px-5 pb-2 text-[10.5px] font-semibold tracking-[0.22em] text-neutral-400">WORKSPACE</p>

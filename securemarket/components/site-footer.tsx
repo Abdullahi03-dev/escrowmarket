@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
+import { Logo } from './logo';
 
 export function SiteFooter() {
   return (
@@ -7,12 +8,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:px-8">
         <div>
           <div className="flex items-center gap-3">
-            <span className="flex h-7 w-7 items-center justify-center bg-white font-mono text-[13px] font-bold text-black">
-              S
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight text-white">
-              SecureMarket
-            </span>
+            <Logo size={28} inverted />
           </div>
           <p className="mt-4 max-w-xs text-[13.5px] leading-6 text-neutral-400">
             The Nigerian digital marketplace where buyer funds stay safely locked in escrow until work is delivered and approved.

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Menu, X, ArrowUpRight, Plus, LayoutDashboard, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { Logo } from './logo';
 
 export function SiteNav() {
   const { user, loading, logout } = useAuth();
@@ -29,12 +30,7 @@ export function SiteNav() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-8">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-3">
-              <span className="flex h-7 w-7 items-center justify-center bg-neutral-950 font-mono text-[13px] font-bold text-white">
-                S
-              </span>
-              <span className="text-[15px] font-semibold tracking-tight">
-                SecureMarket
-              </span>
+              <Logo size={28} />
               <span className="mono hidden rounded-none border border-neutral-300 px-1.5 py-0.5 text-[10px] tracking-widest text-neutral-500 sm:inline">
                 ESCROW
               </span>
@@ -128,10 +124,7 @@ export function SiteNav() {
         >
           <div className="flex items-center justify-between pb-6 border-b border-neutral-200">
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center bg-neutral-950 font-mono text-[11px] font-bold text-white">
-                S
-              </span>
-              <span className="text-[14px] font-semibold">SecureMarket</span>
+              <Logo size={24} />
             </div>
             <button
               onClick={() => setMobileOpen(false)}

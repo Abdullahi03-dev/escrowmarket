@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { Logo } from './logo';
 
 export function AuthShell({
   eyebrow,
@@ -18,10 +19,7 @@ export function AuthShell({
     <div className="grid min-h-screen bg-[#fafafa] text-neutral-950 md:grid-cols-2">
       <div className="flex flex-col px-6 py-8 sm:px-12 md:px-16 lg:px-24">
         <Link href="/" className="flex items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center bg-neutral-950 font-mono text-[13px] font-bold text-white">
-            S
-          </span>
-          <span className="text-[15px] font-semibold tracking-tight">SecureMarket</span>
+          <Logo size={28} />
         </Link>
         <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center py-12">
           <p className="eyebrow text-neutral-500">{eyebrow}</p>
