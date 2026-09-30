@@ -25,7 +25,12 @@ async function bootstrap() {
   app.enableCors({
     origin: frontendUrl.split(',').map((s) => s.trim()),
     credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
+
+  // Required on Render (TLS terminates at the proxy) so Secure cookies work.
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port);

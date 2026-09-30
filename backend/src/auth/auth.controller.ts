@@ -31,17 +31,26 @@ import {
 import type { User } from '../entities/user.entity';
 
 function setSessionCookie(res: Response, raw: string) {
+  // Vercel (frontend) -> Render (backend) is cross-site, so production
+  // cookies must be SameSite=None + Secure or the browser won't send
+  // them on fetch and SessionGuard returns 401.
+  const isProd = process.env.NODE_ENV === 'production';
   res.cookie(SESSION_COOKIE, raw, {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: isProd ? 'none' : 'lax',
+    secure: isProd,
     path: '/',
     maxAge: SESSION_TTL_DAYS * 24 * 3600 * 1000,
   });
 }
 
 function clearSessionCookie(res: Response) {
-  res.clearCookie(SESSION_COOKIE, { path: '/' });
+  const isProd = process.env.NODE_ENV === 'production';
+  res.clearCookie(SESSION_COOKIE, {
+    path: '/',
+    sameSite: isProd ? 'none' : 'lax',
+    secure: isProd,
+  });
 }
 
 @Controller('auth')
