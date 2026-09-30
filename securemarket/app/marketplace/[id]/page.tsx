@@ -25,6 +25,9 @@ export default function ListingDetailPage() {
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
   const [rating, setRating] = useState<{ avg: number | null; count: number } | null>(null);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -62,13 +65,17 @@ export default function ListingDetailPage() {
     }
   }
 
-  async function archive() {
-    if (!listing || !confirm('Archive this listing? It will disappear from the marketplace.')) return;
+  async function handleArchiveConfirm() {
+    if (!listing || archiving) return;
+    setArchiveError(null);
+    setArchiving(true);
     try {
       await api.archiveListing(listing.id);
       router.push('/marketplace');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not archive.');
+      setArchiveError(err instanceof Error ? err.message : 'Could not archive.');
+    } finally {
+      setArchiving(false);
     }
   }
 
@@ -103,29 +110,64 @@ export default function ListingDetailPage() {
         </Link>
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-          <div className="border border-neutral-200 bg-white p-7 md:p-10">
-            <p className="mono text-[11px] tracking-[0.2em] text-neutral-500">
-              {listing.category.toUpperCase()} — {listing.kind}
-            </p>
-            <h1 className="mt-3 font-display text-[34px] font-bold leading-[1.02] tracking-tight md:text-[48px]">
+          <div className="border border-neutral-200 bg-white p-6 md:p-10">
+            {/* Optional Cover Image */}
+            {listing.imageUrl && (
+              <div className="relative mb-6 aspect-16/9 w-full overflow-hidden border border-neutral-200 bg-neutral-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={listing.imageUrl}
+                  alt={listing.title}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mono border border-neutral-950 bg-neutral-950 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-white">
+                {listing.kind}
+              </span>
+              <span className="mono border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[10.5px] tracking-widest text-neutral-600">
+                {listing.category.toUpperCase()}
+              </span>
+            </div>
+
+            <h1 className="mt-4 font-display text-[32px] font-bold leading-[1.05] tracking-tight md:text-[46px]">
               {listing.title}
             </h1>
-            <p className="mono mt-3 text-[12px] tracking-widest text-neutral-500">
+            <p className="mono mt-2.5 text-[11.5px] tracking-widest text-neutral-500">
               {listing.salesCount} SALE{listing.salesCount === 1 ? '' : 'S'} — LISTED {new Date(listing.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase()}
             </p>
             <div className="my-6 h-px bg-neutral-200" />
-            <p className="whitespace-pre-line text-[15px] leading-7 text-neutral-700">{listing.description}</p>
+            
+            <div>
+              <p className="mono text-[10.5px] tracking-[0.2em] text-neutral-400 mb-2">DESCRIPTION & SCOPE</p>
+              <p className="whitespace-pre-line text-[15px] leading-7 text-neutral-700">{listing.description}</p>
+            </div>
+
+            {/* Delivery expectations */}
+            <div className="mt-8 border border-neutral-200 bg-neutral-50/70 p-4">
+              <p className="mono text-[10.5px] tracking-[0.18em] text-neutral-500">DELIVERY SPECIFICATION</p>
+              <p className="mt-1 text-[13px] leading-6 text-neutral-600">
+                {listing.kind === 'PRODUCT'
+                  ? 'The seller will deliver files, documentation, or access credentials directly through your deal room once escrow is funded.'
+                  : 'The seller will communicate progress and deliver completed work through your private transaction room with full revision tracking.'}
+              </p>
+            </div>
 
             {isOwner && (
-              <div className="mt-8 flex flex-wrap gap-2 border-t border-neutral-200 pt-6">
-                <span className="mono border border-neutral-300 px-2 py-1 text-[10.5px] tracking-widest text-neutral-500">
-                  STATUS — {listing.status}
+              <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-neutral-200 pt-6">
+                <span className="mono border border-neutral-300 px-2.5 py-1 text-[11px] tracking-widest text-neutral-600">
+                  STATUS: {listing.status}
                 </span>
                 <Link href={`/marketplace/${listing.id}/edit`} className="flex items-center gap-1.5 border border-neutral-950 px-4 py-2 text-[13px] font-medium transition-colors hover:bg-neutral-950 hover:text-white">
-                  <Pencil size={14} /> Edit
+                  <Pencil size={14} /> Edit Listing
                 </Link>
                 {listing.status !== 'ARCHIVED' && (
-                  <button onClick={archive} className="flex cursor-pointer items-center gap-1.5 border border-neutral-300 px-4 py-2 text-[13px] font-medium text-neutral-600 transition-colors hover:border-neutral-950 hover:text-black">
+                  <button onClick={() => setShowArchiveModal(true)} className="flex cursor-pointer items-center gap-1.5 border border-neutral-300 px-4 py-2 text-[13px] font-medium text-neutral-600 transition-colors hover:border-neutral-950 hover:text-black">
                     <Trash2 size={14} /> Archive
                   </button>
                 )}
@@ -135,47 +177,73 @@ export default function ListingDetailPage() {
 
           <div className="space-y-6">
             <div className="border border-neutral-950 bg-white p-6 shadow-[8px_8px_0_0_#0a0a0a]">
-              <p className="mono text-[11px] tracking-[0.2em] text-neutral-500">PRICE — {listing.currency}</p>
-              <p className="mono mt-1 text-[36px] font-semibold tabular-nums">{formatNGN(listing.priceKobo)}</p>
+              <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+                <span className="mono text-[11px] tracking-[0.2em] text-neutral-500">TOTAL PRICE</span>
+                <span className="mono bg-neutral-100 px-2 py-0.5 text-[10px] tracking-widest text-neutral-700">
+                  ESCROW VAULT
+                </span>
+              </div>
+              <p className="mono mt-3 text-[38px] font-semibold tabular-nums leading-none">{formatNGN(listing.priceKobo)}</p>
+              
+              {/* Cost breakdown */}
+              <div className="mt-4 space-y-1.5 border-y border-neutral-100 py-3 text-[12.5px] text-neutral-600">
+                <div className="flex justify-between">
+                  <span>Product / Service cost</span>
+                  <span className="mono font-medium">{formatNGN(listing.priceKobo)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Escrow protection fee</span>
+                  <span className="mono font-medium text-emerald-600">₦0 (Free)</span>
+                </div>
+              </div>
+
               {buyError && (
-                <p className="mt-3 bg-neutral-950 px-3 py-2 text-[12.5px] leading-5 text-white">{buyError}</p>
+                <p className="mt-3 border border-neutral-950 bg-neutral-950 px-3 py-2 text-[12.5px] leading-5 text-white">{buyError}</p>
               )}
               {!isOwner && listing.status === 'ACTIVE' && (
                 <button
                   onClick={buy}
                   disabled={buying}
-                  className="mt-4 w-full cursor-pointer bg-neutral-950 py-3.5 text-[14px] font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60"
+                  className="mt-5 w-full cursor-pointer bg-neutral-950 py-3.5 text-[14px] font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60"
                 >
-                  {buying ? 'Starting transaction…' : 'Buy — fund escrow'}
+                  {buying ? 'Starting transaction…' : 'Buy Now — Fund Escrow'}
                 </button>
               )}
               {!isOwner && listing.status !== 'ACTIVE' && (
                 <p className="mono mt-4 border border-neutral-300 px-3 py-2.5 text-center text-[11.5px] tracking-widest text-neutral-500">
-                  NOT AVAILABLE
+                  CURRENTLY UNAVAILABLE
                 </p>
               )}
               <div className="mt-4 flex items-start gap-2.5 border-t border-neutral-200 pt-4">
-                <ShieldCheck size={16} className="mt-0.5 shrink-0" />
+                <ShieldCheck size={18} className="mt-0.5 shrink-0 text-neutral-950" />
                 <p className="text-[12.5px] leading-5 text-neutral-600">
-                  Payment is held in escrow and released only when you accept delivery.
+                  Payment is safely held in escrow and released to the seller only after you verify and accept delivery.
                 </p>
               </div>
             </div>
 
             <div className="border border-neutral-200 bg-white p-6">
-              <p className="mono text-[11px] tracking-[0.2em] text-neutral-500">SELLER</p>
-              <p className="mt-2 flex items-center gap-1.5 text-[16px] font-semibold">
-                {listing.seller?.name ?? 'Seller'}
-                {listing.seller?.emailVerified && <BadgeCheck size={16} />}
-              </p>
-              <p className="mono mt-0.5 text-[12px] tracking-widest text-neutral-500">@{listing.seller?.username}</p>
+              <p className="mono text-[11px] tracking-[0.2em] text-neutral-500">SELLER DETAILS</p>
+              <div className="mt-3 flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-neutral-950 font-display text-[17px] font-bold text-white">
+                  {(listing.seller?.name ?? 'S').charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="flex items-center gap-1.5 text-[15.5px] font-semibold">
+                    {listing.seller?.name ?? 'Seller'}
+                    {listing.seller?.emailVerified && <BadgeCheck size={16} className="text-neutral-950" />}
+                  </p>
+                  <p className="mono text-[11.5px] tracking-widest text-neutral-500">@{listing.seller?.username}</p>
+                </div>
+              </div>
+              
               {rating && rating.count > 0 && (
-                <p className="mt-1.5 text-[13px] font-medium tracking-wide">
+                <p className="mt-3 text-[13px] font-medium tracking-wide">
                   {stars(rating.avg)} <span className="font-normal text-neutral-500">({rating.count} review{rating.count === 1 ? '' : 's'})</span>
                 </p>
               )}
               {listing.seller?.bio && (
-                <p className="mt-2.5 text-[13.5px] leading-6 text-neutral-600">{listing.seller.bio}</p>
+                <p className="mt-3 text-[13.5px] leading-6 text-neutral-600 border-t border-neutral-100 pt-3">{listing.seller.bio}</p>
               )}
             </div>
           </div>
@@ -199,6 +267,40 @@ export default function ListingDetailPage() {
             ))}
           </div>
         </div>
+
+        {/* Custom Confirmation Modal */}
+        {showArchiveModal && listing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md border border-neutral-950 bg-white p-6 shadow-2xl">
+              <p className="eyebrow text-neutral-500">CONFIRM ARCHIVE</p>
+              <h3 className="mt-2 font-display text-[20px] font-bold">Archive &quot;{listing.title}&quot;?</h3>
+              <p className="mt-2 text-[13.5px] leading-6 text-neutral-600">
+                This listing will be hidden from the public marketplace. Existing transactions and buyer records will remain safely preserved.
+              </p>
+              {archiveError && (
+                <div className="mt-3 border border-red-500 bg-red-50 px-3 py-2 text-[12.5px] text-red-700">
+                  {archiveError}
+                </div>
+              )}
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowArchiveModal(false)}
+                  disabled={archiving}
+                  className="cursor-pointer border border-neutral-300 px-4 py-2 text-[13px] font-medium hover:border-neutral-950 disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleArchiveConfirm}
+                  disabled={archiving}
+                  className="cursor-pointer bg-neutral-950 px-5 py-2 text-[13px] font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
+                >
+                  {archiving ? 'Archiving…' : 'Yes, archive'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       <SiteFooter />
     </div>

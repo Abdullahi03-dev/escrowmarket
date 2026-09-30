@@ -3,7 +3,18 @@
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, FlaskConical, ShieldCheck } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  FlaskConical,
+  Lock,
+  MessageSquare,
+  ShieldAlert,
+  ShieldCheck,
+} from 'lucide-react';
 import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
 import { useAuth } from '@/lib/auth-context';
@@ -17,15 +28,35 @@ const STEP_LABEL: Record<string, string> = {
   DELIVERED: 'DELIVERY SUBMITTED',
   COMPLETED: 'COMPLETED',
 };
-// Plain-language helper under each step — the UI fix for "too technical".
 const STEP_HELP: Record<string, string> = {
-  AGREEMENT: 'You both agree on what will be delivered.',
-  SECURED: 'Buyer has paid. Money is held safely — not with the seller yet.',
-  DELIVERED: 'Seller has sent the work. Buyer should review it.',
-  COMPLETED: 'Buyer accepted. Deal is done.',
+  AGREEMENT: 'Buyer and seller agree on terms and price.',
+  SECURED: 'Buyer funds escrow vault. Money is safely locked.',
+  DELIVERED: 'Seller submits deliverable and proof of work.',
+  COMPLETED: 'Buyer verifies and accepts. Payout released.',
 };
 
 function StatusPill({ status }: { status: string }) {
+  if (status === 'DISPUTED') {
+    return (
+      <span className="mono flex items-center gap-1.5 border border-red-950 bg-red-950 px-2.5 py-1 text-[11px] tracking-[0.18em] text-white">
+        <AlertTriangle size={12} /> DISPUTED
+      </span>
+    );
+  }
+  if (status === 'REFUNDED') {
+    return (
+      <span className="mono border border-neutral-950 px-2.5 py-1 text-[11px] tracking-[0.18em]">
+        ↩ REFUNDED
+      </span>
+    );
+  }
+  if (status === 'CANCELLED') {
+    return (
+      <span className="mono border border-neutral-400 px-2.5 py-1 text-[11px] tracking-[0.18em] text-neutral-500">
+        ✕ CANCELLED
+      </span>
+    );
+  }
   const dark = status === 'SECURED' || status === 'COMPLETED';
   return (
     <span
@@ -265,60 +296,141 @@ function TxRoom() {
           </div>
         </div>
 
+        {/* High-visibility Action / Escrow Status Banner */}
+        <div className="mt-5 border border-neutral-950 bg-neutral-950 p-5 text-white">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-white/20 bg-white/10">
+                {tx.status === 'AGREEMENT' && <Clock size={20} />}
+                {tx.status === 'SECURED' && <Lock size={20} />}
+                {tx.status === 'DELIVERED' && <CheckCircle2 size={20} />}
+                {tx.status === 'COMPLETED' && <ShieldCheck size={20} />}
+                {tx.status === 'DISPUTED' && <ShieldAlert size={20} className="text-red-400" />}
+                {tx.status === 'REFUNDED' && <ArrowLeft size={20} />}
+                {tx.status === 'CANCELLED' && <Clock size={20} />}
+              </span>
+              <div>
+                <p className="mono text-[10.5px] tracking-[0.22em] text-neutral-400">
+                  {isBuyer ? 'YOUR ROLE: BUYER' : isSeller ? 'YOUR ROLE: SELLER' : 'ROLE: PARTICIPANT'} · ESCROW STATUS
+                </p>
+                <p className="font-display text-[19px] font-bold leading-tight">
+                  {tx.status === 'AGREEMENT' && (isBuyer ? 'Action Needed: Fund Escrow to begin' : 'Waiting for Buyer to fund escrow')}
+                  {tx.status === 'SECURED' && (isSeller ? 'Action Needed: Deliver the work below' : 'Payment secured in escrow — Seller preparing delivery')}
+                  {tx.status === 'DELIVERED' && (isBuyer ? 'Action Needed: Inspect work & accept or report issue' : 'Delivery submitted — Waiting for Buyer approval')}
+                  {tx.status === 'COMPLETED' && 'Deal Completed — Funds released to seller'}
+                  {tx.status === 'DISPUTED' && 'Transaction Paused — Under neutral review'}
+                  {tx.status === 'REFUNDED' && 'Transaction Resolved — Funds returned to buyer'}
+                  {tx.status === 'CANCELLED' && 'Transaction Cancelled — No money was transferred'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <StatusPill status={tx.status} />
+              {tx.fundedVia === 'test' && (
+                <span className="mono flex items-center gap-1.5 border border-dashed border-neutral-600 px-2.5 py-1 text-[10.5px] tracking-widest text-neutral-300">
+                  <FlaskConical size={12} /> TEST MODE
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
         {actionError && (
-          <p className="mt-5 border border-neutral-950 bg-neutral-950 px-4 py-3 text-[13px] leading-5 text-white">
+          <p className="mt-4 border border-neutral-950 bg-neutral-950 px-4 py-3 text-[13px] leading-5 text-white">
             {actionError}
           </p>
         )}
 
-        {/* Simple 4-step strip */}
-        <div className="mt-6 grid gap-px border border-neutral-200 bg-neutral-200 sm:grid-cols-4">
+        {/* 4-step escrow pipeline */}
+        <div className="mt-5 grid gap-px border border-neutral-200 bg-neutral-200 sm:grid-cols-4">
           {STEPS.map((s, i) => {
             const done = !terminal && stepIndex >= i;
             const current = !terminal && stepIndex === i;
             return (
               <div key={s} className={`bg-white px-4 py-3.5 ${current ? 'outline outline-2 -outline-offset-2 outline-neutral-950' : ''}`}>
-                <p className={`mono text-[11px] tracking-[0.16em] ${done ? '' : 'text-neutral-400'}`}>
+                <p className={`mono text-[11px] tracking-[0.16em] ${done ? 'font-semibold text-neutral-950' : 'text-neutral-400'}`}>
                   {i + 1}. {STEP_LABEL[s]}
                 </p>
-                <p className="mt-1 text-[12.5px] leading-5 text-neutral-600">{STEP_HELP[s]}</p>
+                <p className="mt-1 text-[12px] leading-5 text-neutral-600">{STEP_HELP[s]}</p>
               </div>
             );
           })}
         </div>
+
+        {terminal && (
+          <div className="mt-4 border border-neutral-950 bg-white p-4">
+            <p className="mono text-[11px] tracking-[0.18em] text-neutral-500">EXCEPTIONAL RESOLUTION PATH</p>
+            <p className="mt-1 text-[13.5px] leading-6 text-neutral-700">
+              {tx.status === 'DISPUTED' && 'This transaction was flagged for review. Funds stay protected in the escrow vault while evidence and chat history are evaluated.'}
+              {tx.status === 'REFUNDED' && 'This transaction was concluded with a full refund to the buyer’s original payment method.'}
+              {tx.status === 'CANCELLED' && 'This transaction agreement was cancelled before payment was deposited into escrow.'}
+            </p>
+          </div>
+        )}
 
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
           {/* Ledger + chat */}
           <div className="space-y-6">
             <div className="border border-neutral-950 bg-white">
               <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
-                <span className="mono text-[11px] tracking-[0.2em] text-neutral-500">MONEY & PROGRESS</span>
+                <span className="mono text-[11px] tracking-[0.2em] text-neutral-500">ESCROW LEDGER</span>
                 <span className="mono text-[11px] tracking-widest text-neutral-500">{tx.code}</span>
               </div>
               <div className="px-6 py-5">
-                <p className="mono text-[30px] font-semibold tabular-nums">{formatNGN(tx.amountKobo)}</p>
-                <p className="mt-1 text-[12.5px] text-neutral-500">
-                  {tx.status === 'AGREEMENT' && 'Not paid yet — buyer funds this first.'}
-                  {tx.status === 'SECURED' && 'Paid and held safely. Seller has not received it yet.'}
-                  {tx.status === 'DELIVERED' && 'Paid and held. Waiting on buyer to accept.'}
-                  {tx.status === 'COMPLETED' && 'Released to the seller.'}
-                  {tx.status === 'DISPUTED' && 'Locked — under review.'}
-                  {tx.status === 'CANCELLED' && 'Cancelled — no money moved.'}
-                  {tx.status === 'REFUNDED' && 'Returned to the buyer.'}
+                <p className="mono text-[32px] font-semibold tabular-nums">{formatNGN(tx.amountKobo)}</p>
+                <p className="mt-1 text-[13px] text-neutral-600">
+                  {tx.status === 'AGREEMENT' && 'Payment pending — held safely once buyer initiates.'}
+                  {tx.status === 'SECURED' && 'Safely held in escrow vault. Seller has not received payout yet.'}
+                  {tx.status === 'DELIVERED' && 'Safely held in escrow vault. Waiting for buyer verification.'}
+                  {tx.status === 'COMPLETED' && 'Escrow released directly to the seller.'}
+                  {tx.status === 'DISPUTED' && 'Locked in escrow — awaiting dispute resolution.'}
+                  {tx.status === 'CANCELLED' && 'Cancelled — no funds moved.'}
+                  {tx.status === 'REFUNDED' && 'Returned safely to the buyer.'}
                 </p>
                 <div className="mt-4 grid grid-cols-2 divide-x divide-neutral-200 border-y border-neutral-200">
                   <div className="py-3 pr-4">
                     <p className="mono text-[10px] tracking-[0.2em] text-neutral-400">BUYER</p>
                     <p className="mt-1 text-[14px] font-semibold">{tx.buyer?.name ?? '—'}</p>
+                    <p className="mono text-[11px] text-neutral-500">@{tx.buyer?.username}</p>
                   </div>
                   <div className="py-3 pl-4">
                     <p className="mono text-[10px] tracking-[0.2em] text-neutral-400">SELLER</p>
                     <p className="mt-1 text-[14px] font-semibold">{tx.seller?.name ?? '—'}</p>
+                    <p className="mono text-[11px] text-neutral-500">@{tx.seller?.username}</p>
                   </div>
                 </div>
+
+                {tx.deliveryNote && (
+                  <div className="mt-5 border border-neutral-950 bg-neutral-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="mono text-[10.5px] tracking-[0.2em] text-neutral-700 font-semibold">DELIVERY SUBMISSION</p>
+                      <span className="mono text-[10px] bg-neutral-950 text-white px-2 py-0.5">PROOF OF WORK</span>
+                    </div>
+                    <p className="mt-2 whitespace-pre-line text-[13.5px] leading-6 text-neutral-900">{tx.deliveryNote}</p>
+                    {tx.deliveryUrl && (
+                      <a
+                        href={tx.deliveryUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 border border-neutral-950 bg-white px-3 py-1.5 text-[12.5px] font-medium text-neutral-900 hover:bg-neutral-950 hover:text-white"
+                      >
+                        <ExternalLink size={13} /> Open deliverable link
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {tx.disputeReason && (
+                  <div className="mt-5 border border-red-900 bg-red-50/50 p-4">
+                    <p className="mono text-[10px] tracking-[0.2em] text-red-900 font-semibold">DISPUTE DETAILS</p>
+                    <p className="mt-1.5 text-[13.5px] leading-6 text-red-950">{tx.disputeReason}</p>
+                  </div>
+                )}
+
                 {tx.events && tx.events.length > 0 && (
                   <div className="mt-6 border-t border-neutral-200 pt-4">
-                    <p className="mono text-[10px] tracking-[0.2em] text-neutral-400">HISTORY</p>
+                    <p className="mono text-[10px] tracking-[0.2em] text-neutral-400">ACTIVITY HISTORY</p>
                     <ul className="mt-2.5 space-y-2">
                       {tx.events.map((e) => (
                         <li key={e.id} className="text-[12.5px] leading-5 text-neutral-600">
@@ -331,36 +443,41 @@ function TxRoom() {
                     </ul>
                   </div>
                 )}
-                {tx.deliveryNote && (
-                  <div className="mt-5 border border-neutral-200 bg-neutral-50 p-4">
-                    <p className="mono text-[10px] tracking-[0.2em] text-neutral-400">WHAT THE SELLER DELIVERED</p>
-                    <p className="mt-1.5 whitespace-pre-line text-[13.5px] leading-6">{tx.deliveryNote}</p>
-                    {tx.deliveryUrl && (
-                      <a href={tx.deliveryUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-[13px] font-medium underline underline-offset-4">
-                        Open delivery link →
-                      </a>
-                    )}
-                  </div>
-                )}
-                {tx.disputeReason && (
-                  <div className="mt-5 border border-neutral-950 p-4">
-                    <p className="mono text-[10px] tracking-[0.2em] text-neutral-500">WHY IT WAS DISPUTED</p>
-                    <p className="mt-1.5 text-[13.5px] leading-6">{tx.disputeReason}</p>
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Chat with the other side */}
+            {/* Chat with the counterparty */}
             <div className="border border-neutral-200 bg-white">
               <div className="border-b border-neutral-200 px-6 py-4">
-                <p className="mono text-[11px] tracking-[0.2em] text-neutral-500">CHAT WITH {otherName.toUpperCase()}</p>
-                <p className="mt-1 text-[12.5px] text-neutral-500">Talk about this deal here — it stays as proof if there is a dispute.</p>
+                <div className="flex items-center gap-2">
+                  <MessageSquare size={16} />
+                  <p className="mono text-[11px] tracking-[0.2em] text-neutral-500">DEAL CHAT — {otherName.toUpperCase()}</p>
+                </div>
+                <p className="mt-1 text-[12.5px] text-neutral-500">All messages are kept as verifiable evidence in case of dispute.</p>
               </div>
+
+              {/* Quick message suggestion chips */}
+              <div className="flex flex-wrap gap-1.5 border-b border-neutral-100 bg-neutral-50 px-6 py-2.5">
+                {[
+                  isBuyer ? 'Hi! When should I expect delivery?' : 'Hi! Starting work on your order now.',
+                  isBuyer ? 'Could you check the specifications?' : 'Delivery is ready, please inspect below.',
+                  'All looks good, thank you!',
+                ].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setChatInput(chip)}
+                    className="cursor-pointer border border-neutral-200 bg-white px-2.5 py-1 text-[11.5px] text-neutral-600 hover:border-neutral-950 hover:text-black"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+
               <div className="max-h-80 space-y-3 overflow-y-auto px-6 py-5">
                 {chat.length === 0 && (
-                  <p className="text-[13px] leading-6 text-neutral-500">
-                    No messages yet. Say hello — e.g. “Hi, I just funded. How long will delivery take?”
+                  <p className="text-[13px] leading-6 text-neutral-500 text-center py-4">
+                    No messages yet. Send a note to coordinate or ask questions.
                   </p>
                 )}
                 {chat.map((m) => (
@@ -393,18 +510,21 @@ function TxRoom() {
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Action sidebar */}
           <div className="space-y-4">
             <div className="border border-neutral-200 bg-white p-6">
               <p className="mono text-[11px] tracking-[0.2em] text-neutral-500">WHAT TO DO NOW</p>
               <div className="mt-3 space-y-3">
                 {isBuyer && tx.status === 'AGREEMENT' && (
                   <>
+                    <p className="text-[13px] leading-5 text-neutral-600">
+                      Deposit payment into the secure escrow vault. The seller only receives payout after you approve the delivered work.
+                    </p>
                     <button onClick={fund} disabled={busy !== null} className="w-full cursor-pointer bg-neutral-950 py-3 text-[14px] font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60">
-                      {busy === 'fund' ? 'Opening secure payment…' : `Pay ${formatNGN(tx.amountKobo)} — money stays safe`}
+                      {busy === 'fund' ? 'Opening secure payment…' : `Fund Escrow — ${formatNGN(tx.amountKobo)}`}
                     </button>
                     <button onClick={retryVerify} disabled={busy !== null} className="w-full cursor-pointer border border-neutral-300 py-2.5 text-[13px] font-medium transition-colors hover:border-neutral-950 disabled:opacity-50">
-                      {busy === 'verify' ? 'Checking payment…' : 'I already paid — check payment'}
+                      {busy === 'verify' ? 'Checking payment…' : 'I already paid — check verification'}
                     </button>
                     <button onClick={() => run('cancel', () => api.cancelTransaction(tx.id))} disabled={busy !== null} className="w-full cursor-pointer border border-neutral-300 py-2.5 text-[13px] font-medium text-neutral-500 transition-colors hover:border-neutral-950 hover:text-black disabled:opacity-50">
                       Cancel this deal
@@ -413,7 +533,7 @@ function TxRoom() {
                 )}
                 {isSeller && tx.status === 'AGREEMENT' && (
                   <>
-                    <p className="text-[13px] leading-5 text-neutral-600">Waiting on the buyer to pay. You deliver only after you see “Payment secured”.</p>
+                    <p className="text-[13px] leading-5 text-neutral-600">Waiting for buyer to fund escrow. You should only begin or deliver work after you see “Payment secured”.</p>
                     <button onClick={() => run('cancel', () => api.cancelTransaction(tx.id))} disabled={busy !== null} className="w-full cursor-pointer border border-neutral-300 py-2.5 text-[13px] font-medium transition-colors hover:border-neutral-950 disabled:opacity-50">
                       Cancel this deal
                     </button>
@@ -421,13 +541,13 @@ function TxRoom() {
                 )}
                 {isSeller && tx.status === 'SECURED' && (
                   <div className="space-y-3">
-                    <p className="text-[13px] leading-5 text-neutral-600">Money is secured. Describe what you delivered:</p>
+                    <p className="text-[13px] leading-5 text-neutral-600">Payment is secured in escrow. Submit your completed deliverables below:</p>
                     <label className="block">
-                      <span className="mb-1.5 block text-[13px] font-medium">What did you deliver?</span>
-                      <textarea required rows={4} value={deliverNote} onChange={(e) => setDeliverNote(e.target.value)} placeholder="What you did, where to find it…" className="w-full border border-neutral-300 px-3.5 py-2.5 text-[14px] leading-6 outline-none focus:border-neutral-950" />
+                      <span className="mb-1.5 block text-[13px] font-medium">Delivery details / instructions</span>
+                      <textarea required rows={4} value={deliverNote} onChange={(e) => setDeliverNote(e.target.value)} placeholder="Describe what you completed, access credentials, instructions…" className="w-full border border-neutral-300 px-3.5 py-2.5 text-[14px] leading-6 outline-none focus:border-neutral-950" />
                     </label>
                     <label className="block">
-                      <span className="mb-1.5 block text-[13px] font-medium">Link <span className="font-normal text-neutral-400">— optional</span></span>
+                      <span className="mb-1.5 block text-[13px] font-medium">Deliverable link <span className="font-normal text-neutral-400">— Google Drive, Figma, GitHub, etc.</span></span>
                       <input value={deliverUrl} onChange={(e) => setDeliverUrl(e.target.value)} placeholder="https://…" inputMode="url" className="w-full border border-neutral-300 px-3.5 py-2.5 text-[14px] outline-none focus:border-neutral-950" />
                     </label>
                     <button
@@ -435,20 +555,35 @@ function TxRoom() {
                       disabled={busy !== null || !deliverNote.trim()}
                       className="w-full cursor-pointer bg-neutral-950 py-3 text-[14px] font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60"
                     >
-                      {busy === 'deliver' ? 'Sending…' : 'Mark as delivered'}
+                      {busy === 'deliver' ? 'Submitting…' : 'Submit Delivery'}
                     </button>
                   </div>
                 )}
                 {isBuyer && tx.status === 'SECURED' && (
-                  <p className="text-[13px] leading-5 text-neutral-600">Paid and secured. The seller is preparing your delivery — use the chat if you need to agree details.</p>
+                  <div className="space-y-2">
+                    <p className="flex items-center gap-2 text-[13.5px] font-medium">
+                      <Lock size={16} /> Funds are protected in escrow
+                    </p>
+                    <p className="text-[13px] leading-5 text-neutral-600">
+                      The seller is preparing your delivery. You can send questions or discuss requirements via the chat.
+                    </p>
+                  </div>
                 )}
                 {isBuyer && tx.status === 'DELIVERED' && (
-                  <button onClick={() => run('accept', () => api.acceptTransaction(tx.id))} disabled={busy !== null} className="w-full cursor-pointer bg-neutral-950 py-3 text-[14px] font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60">
-                    {busy === 'accept' ? 'Completing…' : 'Happy with it? Accept & release money'}
-                  </button>
+                  <div className="space-y-3">
+                    <div className="border border-neutral-950 bg-neutral-50 p-3.5 text-[13px] leading-5">
+                      <p className="font-semibold text-neutral-950">Review Before Accepting</p>
+                      <p className="mt-1 text-neutral-600">
+                        Check the seller’s deliverable link and notes in the ledger. Accepting immediately releases the {formatNGN(tx.amountKobo)} to the seller.
+                      </p>
+                    </div>
+                    <button onClick={() => run('accept', () => api.acceptTransaction(tx.id))} disabled={busy !== null} className="w-full cursor-pointer bg-neutral-950 py-3 text-[14px] font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60">
+                      {busy === 'accept' ? 'Releasing…' : 'Accept Delivery & Release Funds'}
+                    </button>
+                  </div>
                 )}
                 {isSeller && tx.status === 'DELIVERED' && (
-                  <p className="text-[13px] leading-5 text-neutral-600">Delivered. Money releases when the buyer accepts.</p>
+                  <p className="text-[13px] leading-5 text-neutral-600">Delivery submitted. Payout will be queued as soon as the buyer accepts.</p>
                 )}
                 {tx.status === 'COMPLETED' && (
                   <div className="space-y-2.5">

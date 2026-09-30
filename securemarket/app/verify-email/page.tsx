@@ -42,7 +42,7 @@ function VerifyForm() {
             <br />
             <span className="text-neutral-500">Earned, not claimed.</span>
           </p>
-          <p className="text-[11px] font-medium tracking-widest text-neutral-600">TOKENS STORED HASHED</p>
+          <p className="text-[11px] font-medium tracking-widest text-neutral-600">VERIFIED ACCOUNTS ENJOY GREATER TRUST & PROTECTION</p>
         </>
       }
     >

@@ -68,13 +68,19 @@ export default function OnboardingPage() {
       sub="You can change this later from your settings."
       side={
         <>
-          <p className="eyebrow text-neutral-500">PROFILE — {user.email}</p>
-          <p className="font-display text-[28px] font-bold leading-tight tracking-tight">
-            Set up once.
-            <br />
-            <span className="text-neutral-500">Transact forever.</span>
-          </p>
-          <p className="text-[11px] font-medium tracking-widest text-neutral-600">@{user.username} — {user.role}</p>
+          <p className="eyebrow text-neutral-500">ACCOUNT SETUP</p>
+          <div>
+            <p className="font-display text-[28px] font-bold leading-tight tracking-tight">
+              Protected digital commerce.
+            </p>
+            <p className="text-[13.5px] leading-6 text-neutral-400 mt-3">
+              Every transaction is safeguarded by escrow. Funds remain secure until buyers inspect and approve deliveries.
+            </p>
+            <div className="mono mt-6 border border-neutral-800 p-3.5 text-[11.5px] text-neutral-400">
+              SIGNED IN AS: {user.email}
+            </div>
+          </div>
+          <p className="text-[11px] font-medium tracking-widest text-neutral-600">SECUREMARKET ESCROW PLATFORM</p>
         </>
       }
     >
@@ -102,7 +108,7 @@ export default function OnboardingPage() {
           <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} maxLength={280} placeholder="What do you do?" className="w-full resize-none border border-neutral-300 bg-white px-3.5 py-2.5 text-[14.5px] outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-950" />
         </label>
         <Submit loading={saving}>Continue to dashboard</Submit>
-        <FormNote message="Profile image upload arrives with listings — skip for now." />
+        <FormNote message="You can update your profile, avatar, and notification settings anytime in your dashboard." />
       </form>
     </AuthShell>
   );

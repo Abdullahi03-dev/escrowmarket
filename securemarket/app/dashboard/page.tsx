@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import {
   ArrowLeftRight,
   BadgeCheck,
@@ -74,10 +74,16 @@ function CardHeader({ Icon, kicker, title }: { Icon: typeof Mail; kicker: string
   );
 }
 
-export default function DashboardPage() {
+const VALID_TABS: DashSection[] = ['overview', 'transactions', 'payouts', 'profile', 'security', 'admin'];
+
+function DashboardContent() {
   const { user, loading, refresh, logout } = useAuth();
   const router = useRouter();
-  const [section, setSection] = useState<DashSection>('overview');
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as DashSection | null;
+  const [section, setSection] = useState<DashSection>(
+    tabParam && VALID_TABS.includes(tabParam) ? tabParam : 'overview'
+  );
 
   const [sessions, setSessions] = useState<ApiSession[] | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -91,12 +97,14 @@ export default function DashboardPage() {
   const [bankMsg, setBankMsg] = useState<{ kind: 'error' | 'ok'; message: string } | null>(null);
   const [bankBusy, setBankBusy] = useState<'resolve' | 'save' | null>(null);
   const [payoutBusy, setPayoutBusy] = useState<string | null>(null);
+  const [payoutNote, setPayoutNote] = useState<{ kind: 'error' | 'ok'; message: string } | null>(null);
 
   const [disputes, setDisputes] = useState<ApiTransaction[] | null>(null);
   const [resolveId, setResolveId] = useState<string | null>(null);
   const [resolveDecision, setResolveDecision] = useState<'release' | 'refund'>('release');
   const [resolveNote, setResolveNote] = useState('');
   const [resolving, setResolving] = useState(false);
+  const [disputeNote, setDisputeNote] = useState<{ kind: 'error' | 'ok'; message: string } | null>(null);
 
   const [profile, setProfile] = useState({ name: '', username: '', bio: '', avatarUrl: '' });
   const [profileMsg, setProfileMsg] = useState<{ kind: 'error' | 'ok'; message: string } | null>(null);
@@ -108,6 +116,19 @@ export default function DashboardPage() {
 
   const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [sessionNote, setSessionNote] = useState<{ kind: 'error' | 'ok'; message: string } | null>(null);
+
+  // Sync tab with URL search parameter if changed externally
+  useEffect(() => {
+    if (tabParam && VALID_TABS.includes(tabParam) && tabParam !== section) {
+      setSection(tabParam);
+    }
+  }, [tabParam, section]);
+
+  function handleSelectTab(s: DashSection) {
+    setSection(s);
+    router.replace(`/dashboard?tab=${s}`, { scroll: false });
+  }
 
   useEffect(() => {
     if (!loading && !user) router.push('/login?next=/dashboard');
@@ -220,11 +241,13 @@ export default function DashboardPage() {
   async function revoke(id: string) {
     if (revoking) return;
     setRevoking(id);
+    setSessionNote(null);
     try {
       await api.revokeSession(id);
       await loadSessions();
+      setSessionNote({ kind: 'ok', message: 'Session revoked successfully.' });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not revoke session.');
+      setSessionNote({ kind: 'error', message: err instanceof Error ? err.message : 'Could not revoke session.' });
     } finally {
       setRevoking(null);
     }
@@ -233,12 +256,16 @@ export default function DashboardPage() {
   async function revokeOthers() {
     if (revoking) return;
     setRevoking('others');
+    setSessionNote(null);
     try {
       const res = await api.revokeOtherSessions();
-      alert(res.revoked === 0 ? 'No other sessions to revoke.' : `Revoked ${res.revoked} other session(s).`);
+      setSessionNote({
+        kind: 'ok',
+        message: res.revoked === 0 ? 'No other active sessions found.' : `Logged out of ${res.revoked} other device(s).`,
+      });
       await loadSessions();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not revoke sessions.');
+      setSessionNote({ kind: 'error', message: err instanceof Error ? err.message : 'Could not revoke sessions.' });
     } finally {
       setRevoking(null);
     }
@@ -287,11 +314,13 @@ export default function DashboardPage() {
   async function retryPayout(id: string) {
     if (payoutBusy) return;
     setPayoutBusy(id);
+    setPayoutNote(null);
     try {
       const updated = await api.retryPayout(id);
       setPayouts((p) => (p ?? []).map((x) => (x.id === id ? updated : x)));
+      setPayoutNote({ kind: 'ok', message: 'Payout retry queued with payment provider.' });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Retry failed.');
+      setPayoutNote({ kind: 'error', message: err instanceof Error ? err.message : 'Retry failed.' });
     } finally {
       setPayoutBusy(null);
     }
@@ -301,6 +330,7 @@ export default function DashboardPage() {
     e.preventDefault();
     if (resolving || !resolveId || !resolveNote.trim()) return;
     setResolving(true);
+    setDisputeNote(null);
     try {
       await api.resolveDispute(resolveId, resolveDecision, resolveNote.trim());
       setResolveId(null);
@@ -311,15 +341,16 @@ export default function DashboardPage() {
       ]);
       setDisputes(d);
       setTxs(t);
+      setDisputeNote({ kind: 'ok', message: `Dispute decision confirmed as ${resolveDecision}.` });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Resolution failed.');
+      setDisputeNote({ kind: 'error', message: err instanceof Error ? err.message : 'Resolution failed.' });
     } finally {
       setResolving(false);
     }
   }
 
   return (
-    <DashboardShell user={user} active={section} onSelect={setSection} onLogout={handleLogout}>
+    <DashboardShell user={user} active={section} onSelect={handleSelectTab} onLogout={handleLogout}>
       {/* ============ OVERVIEW ============ */}
       {section === 'overview' && (
         <div className="space-y-6">
@@ -579,6 +610,9 @@ export default function DashboardPage() {
 
           <div className="border border-neutral-200 bg-white p-6">
             <CardHeader Icon={ArrowLeftRight} kicker="TRANSFERS" title="Payout history" />
+            <div className="mt-3">
+              <Note kind={payoutNote?.kind ?? 'ok'} message={payoutNote?.message ?? null} />
+            </div>
             {payouts === null ? (
               <p className="mono mt-4 text-[12px] tracking-widest text-neutral-400">LOADING PAYOUTS…</p>
             ) : payouts.length === 0 ? (
@@ -624,6 +658,7 @@ export default function DashboardPage() {
       {/* ============ ADMIN ============ */}
       {section === 'admin' && user.role === 'ADMIN' && (
         <div className="space-y-6">
+          <Note kind={disputeNote?.kind ?? 'ok'} message={disputeNote?.message ?? null} />
           <p className="text-[13.5px] leading-6 text-neutral-600">
             Open the deal to read the ledger + chat evidence, then decide. Release pays the seller
             (triggers payout). Refund returns money to the buyer via Paystack when live-funded.
@@ -739,7 +774,7 @@ export default function DashboardPage() {
               {profileSaving ? 'Saving…' : 'Save profile'}
             </button>
             <p className="text-[12.5px] text-neutral-500">
-              Saved straight to PostgreSQL via <span className="mono">PATCH /auth/profile</span>.
+              Your profile details are shown to counterparties on your listings and transactions.
             </p>
           </form>
         </div>
@@ -814,18 +849,22 @@ export default function DashboardPage() {
                   disabled={revoking !== null}
                   className="cursor-pointer border border-neutral-950 px-4 py-2 text-[13px] font-medium transition-colors hover:bg-neutral-950 hover:text-white disabled:opacity-50"
                 >
-                  {revoking === 'others' ? 'Revoking…' : 'Log out other devices'}
+                  {revoking === 'others' ? 'Logging out…' : 'Log out other devices'}
                 </button>
               </div>
             </div>
             <p className="mt-3 text-[13px] leading-6 text-neutral-600">
-              Every device logged into this account. Sessions live in PostgreSQL as hashes —
-              revoking one kills that device instantly.
+              Every device currently authorized to access your account. Revoking a session signs that device out immediately.
             </p>
+
+            <div className="mt-3">
+              <Note kind={sessionNote?.kind ?? 'ok'} message={sessionNote?.message ?? null} />
+            </div>
+
             <div className="mt-4 divide-y divide-neutral-100 border-y border-neutral-200">
               {sessionsLoading && <p className="mono py-5 text-[12px] tracking-widest text-neutral-400">LOADING SESSIONS…</p>}
               {!sessionsLoading && sessions?.length === 0 && (
-                <p className="py-5 text-[13.5px] text-neutral-500">No active sessions — this should not happen while logged in.</p>
+                <p className="py-5 text-[13.5px] text-neutral-500">No active sessions.</p>
               )}
               {sessions?.map((s) => (
                 <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
@@ -843,7 +882,7 @@ export default function DashboardPage() {
                         <span className="mono text-[12px] font-normal text-neutral-500">{s.id.slice(0, 8).toUpperCase()}</span>
                       </p>
                       <p className="mono mt-1 text-[11.5px] tracking-wide text-neutral-500">
-                        SINCE {fmtDate(s.createdAt).toUpperCase()} — EXPIRES {fmtDate(s.expiresAt).toUpperCase()}
+                        ACTIVE SINCE {fmtDate(s.createdAt).toUpperCase()}
                       </p>
                     </div>
                   </div>
@@ -860,11 +899,25 @@ export default function DashboardPage() {
               ))}
             </div>
             <p className="mt-4 text-[12.5px] text-neutral-500">
-              Served by <span className="mono">GET /auth/sessions</span> and <span className="mono">DELETE /auth/sessions/:id</span> — session cookie required, users can only ever see their own.
+              All sessions are protected with encrypted authentication tokens. If you ever notice an unfamiliar session, revoke it immediately and update your password.
             </p>
           </div>
         </div>
       )}
     </DashboardShell>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mono flex min-h-screen items-center justify-center bg-[#fafafa] text-[12px] tracking-widest text-neutral-500">
+          LOADING DASHBOARD…
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }

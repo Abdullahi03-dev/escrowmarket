@@ -67,7 +67,7 @@ export default function RegisterPage() {
               <li>03 — COMPLETE PROFILE</li>
             </ul>
           </div>
-          <p className="text-[11px] font-medium tracking-widest text-neutral-600">PASSWORDS ARE HASHED — NEVER STORED PLAIN</p>
+          <p className="text-[11px] font-medium tracking-widest text-neutral-600">END-TO-END ESCROW PROTECTION ON EVERY DEAL</p>
         </>
       }
     >

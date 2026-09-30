@@ -40,17 +40,57 @@ export function MarketplacePreview() {
   return (
     <div className="mt-12 grid gap-px border border-neutral-200 bg-neutral-200 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((l) => (
-        <Link key={l.id} href={`/marketplace/${l.id}`} className="group bg-white p-6 transition-colors hover:bg-neutral-950 hover:text-white">
-          <p className="mono text-[10px] tracking-[0.2em] opacity-60">{l.category.toUpperCase()} — {l.kind}</p>
-          <h3 className="mt-3 min-h-[48px] text-[16px] font-semibold leading-snug tracking-tight">
-            {l.title}
-          </h3>
-          <p className="mono mt-3 text-[11px] tracking-widest opacity-60">
-            @{l.seller?.username ?? 'seller'} — {l.salesCount} SALE{l.salesCount === 1 ? '' : 'S'}
-          </p>
-          <p className="mono mt-4 border-t border-current/10 pt-4 text-[18px] font-semibold tabular-nums">
-            {formatNGN(l.priceKobo)}
-          </p>
+        <Link
+          key={l.id}
+          href={`/marketplace/${l.id}`}
+          className="group flex flex-col justify-between bg-white p-5 transition-colors hover:bg-neutral-950 hover:text-white"
+        >
+          <div>
+            {/* Visual thumbnail or brutalist monogram banner */}
+            <div className="relative mb-4 aspect-16/10 w-full overflow-hidden border border-neutral-200 bg-neutral-100 transition-colors group-hover:border-neutral-800 group-hover:bg-neutral-900">
+              {l.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={l.imageUrl}
+                  alt={l.title}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    // Hide broken image link gracefully
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center font-display text-[26px] font-bold text-neutral-300 group-hover:text-neutral-700">
+                  {l.category.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <span className="mono absolute left-2 top-2 bg-neutral-950/80 px-1.5 py-0.5 text-[9.5px] font-semibold tracking-widest text-white backdrop-blur-xs">
+                {l.kind}
+              </span>
+            </div>
+
+            <p className="mono text-[10px] tracking-[0.2em] opacity-60">
+              {l.category.toUpperCase()}
+            </p>
+            <h3 className="mt-2 line-clamp-2 text-[16px] font-semibold leading-snug tracking-tight">
+              {l.title}
+            </h3>
+          </div>
+
+          <div className="mt-5 border-t border-current/10 pt-3">
+            <div className="flex items-center justify-between">
+              <span className="mono text-[11px] tracking-widest opacity-60">
+                @{l.seller?.username ?? 'seller'}
+                {l.seller?.emailVerified ? ' ✓' : ''}
+              </span>
+              <span className="mono text-[10px] opacity-60">
+                {l.salesCount} sold
+              </span>
+            </div>
+            <p className="mono mt-2 text-[18px] font-semibold tabular-nums">
+              {formatNGN(l.priceKobo)}
+            </p>
+          </div>
         </Link>
       ))}
     </div>

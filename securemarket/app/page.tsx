@@ -319,16 +319,68 @@ export default function Home() {
           </h2>
           <div className="mt-12 grid border-t border-neutral-950 md:grid-cols-4">
             {[
-              ['CLEAR AGREEMENTS', 'The transaction records what the buyer and seller agreed to.'],
-              ['DELIVERY TRACKING', 'Deliveries are submitted through the transaction.'],
-              ['TRANSACTION HISTORY', 'Important activity remains associated with the transaction.'],
-              ['DISPUTE WORKFLOW', 'Transactions can be reviewed when something goes wrong.'],
+              ['LOCKED ESCROW VAULT', 'Buyer funds are captured by Paystack and held in an isolated escrow vault before any work or delivery begins.'],
+              ['PROOF-OF-DELIVERY', 'Sellers submit verifiable files, access keys, or tracking links directly into the immutable deal room.'],
+              ['BUYER INSPECTION WINDOW', 'Buyers inspect deliverables and confirm satisfaction before any funds can ever be released.'],
+              ['EVIDENCE-BASED DISPUTES', 'If terms are contested, a human mediator reviews timestamped deal logs and deliverables to arbitrate fairly.'],
             ].map(([t, d], i) => (
               <div key={t} className={`border-b border-neutral-200 py-8 pr-8 md:border-b-0 ${i !== 0 ? 'md:border-l md:pl-8' : ''}`}>
                 <p className="text-[12px] font-semibold tracking-[0.16em]">{t}</p>
                 <p className="mt-3 text-[14px] leading-6 text-neutral-600">{d}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ FAQ / CLARITY ============ */}
+      <section id="faq" className="border-b border-neutral-200 bg-white">
+        <div className="mx-auto max-w-7xl px-5 py-20 md:px-8 md:py-28">
+          <div className="grid gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-start">
+            <div>
+              <p className="eyebrow text-neutral-500">07 — CLEAR ANSWERS</p>
+              <h2 className="mt-4 font-display text-[36px] font-bold leading-[1.02] tracking-[-0.01em] md:text-[52px]">
+                Frequently asked questions.
+              </h2>
+              <p className="mt-4 max-w-sm text-[15px] leading-7 text-neutral-600">
+                Escrow protects both sides of every transaction. Here is exactly what happens at each step.
+              </p>
+            </div>
+
+            <div className="divide-y divide-neutral-200 border border-neutral-200">
+              {[
+                {
+                  q: 'Where does my money go when I fund a deal?',
+                  a: 'Your payment goes straight into a dedicated escrow vault managed with our licensed payment partners. The seller cannot withdraw or access your money until you personally verify the delivery and click "Accept & release".',
+                },
+                {
+                  q: 'What if the seller doesn’t deliver or sends the wrong files?',
+                  a: 'You can tap "Report a problem" inside your private transaction room at any time. The funds remain locked in escrow immediately. You can communicate via transaction chat to resolve it, or request neutral arbitration for a full refund.',
+                },
+                {
+                  q: 'How and when do sellers receive payment?',
+                  a: 'The moment the buyer reviews and accepts delivery, the escrow is completed and a payout is automatically queued to your verified Nigerian bank account via Paystack.',
+                },
+                {
+                  q: 'Are there any hidden fees or charges?',
+                  a: 'Currently, SecureMarket is operating with 0% platform transaction fees. What you agree on is what is paid.',
+                },
+                {
+                  q: 'Do I need separate accounts for buying and selling?',
+                  a: 'No. A single SecureMarket account lets you both purchase digital products and list your own services, managed from one dashboard.',
+                },
+              ].map((item, i) => (
+                <div key={item.q} className="p-6 md:p-8">
+                  <p className="flex items-center gap-3 font-display text-[18px] font-bold leading-snug">
+                    <span className="mono text-[12px] text-neutral-400">0{i + 1}</span>
+                    {item.q}
+                  </p>
+                  <p className="mt-3 text-[14.5px] leading-6 text-neutral-600 pl-7">
+                    {item.a}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
