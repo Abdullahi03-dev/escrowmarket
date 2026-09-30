@@ -1,0 +1,28 @@
+# Render blueprint — New → Blueprint → connect escrowmarket repo.
+# Secrets (DATABASE_URL, PAYSTACK_SECRET_KEY, FRONTEND_URL) are entered
+# in the Render dashboard, never in this file.
+services:
+  - type: web
+    name: securemarket-backend
+    runtime: node
+    rootDir: backend
+    # --include=dev: @nestjs/cli is a devDependency; Render's default
+    # production install would skip it and `nest build` fails.
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: node dist/main
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_SSL
+        value: true
+      - key: TYPEORM_SYNC
+        value: false
+      - key: DATABASE_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_CALLBACK_URL
+        sync: false
