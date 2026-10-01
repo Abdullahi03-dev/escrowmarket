@@ -36,9 +36,7 @@ export default function RegisterPage() {
         password: form.password,
         confirmPassword: form.confirmPassword,
       });
-      if (res.devToken) {
-        setNote(`DEV ONLY — verification token created: ${res.devToken.slice(0, 16)}… (see backend logs / verify-email page)`);
-      }
+      void res;
       router.push('/onboarding');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed.');

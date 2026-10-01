@@ -196,15 +196,6 @@ export function DashboardShell({
                 {SECTION_META[active].sub}
               </p>
             </div>
-            <span
-              className={`mono ml-auto shrink-0 border px-2 py-1 text-[10px] tracking-[0.18em] ${
-                user.emailVerified
-                  ? 'border-neutral-950 bg-neutral-950 text-white'
-                  : 'border-neutral-300 text-neutral-500'
-              }`}
-            >
-              {user.emailVerified ? '● VERIFIED' : '○ UNVERIFIED'}
-            </span>
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 md:px-8">{children}</main>

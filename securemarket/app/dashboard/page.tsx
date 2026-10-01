@@ -13,7 +13,6 @@ import {
   Mail,
   MonitorSmartphone,
   RefreshCw,
-  ShieldAlert,
   ShoppingBag,
   Store,
 } from 'lucide-react';
@@ -114,7 +113,6 @@ function DashboardContent() {
   const [pwMsg, setPwMsg] = useState<{ kind: 'error' | 'ok'; message: string } | null>(null);
   const [pwSaving, setPwSaving] = useState(false);
 
-  const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [sessionNote, setSessionNote] = useState<{ kind: 'error' | 'ok'; message: string } | null>(null);
 
@@ -189,7 +187,6 @@ function DashboardContent() {
   const checklist = [
     { label: 'Account created', done: true },
     { label: 'Role selected', done: user.onboardingCompleted },
-    { label: 'Email verified', done: user.emailVerified, go: 'verify-email' as const },
     { label: 'Bio added', done: Boolean(user.bio), go: 'profile' as const },
   ];
 
@@ -364,37 +361,11 @@ function DashboardContent() {
             </p>
           </div>
 
-          {!user.emailVerified && (
-            <div className="flex flex-wrap items-center gap-4 border border-neutral-950 bg-white p-5">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center bg-neutral-950 text-white">
-                <ShieldAlert size={19} />
-              </span>
-              <p className="min-w-0 flex-1 text-[13.5px] leading-6">
-                <span className="font-semibold">Verify your email</span>{' '}
-                <span className="text-neutral-600">— unlock the verified badge shown to counterparties.</span>
-                {verifyMsg && <span className="mono mt-1 block text-[11.5px]">{verifyMsg}</span>}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={async () => {
-                    const r = await api.resendVerification();
-                    setVerifyMsg(r.devToken ? `DEV token: ${r.devToken}` : 'Verification email queued.');
-                  }}
-                  className="cursor-pointer border border-neutral-950 px-4 py-2 text-[13px] font-medium transition-colors hover:bg-neutral-950 hover:text-white"
-                >
-                  Resend
-                </button>
-                <Link href="/verify-email" className="bg-neutral-950 px-4 py-2 text-[13px] font-medium text-white">
-                  Verify
-                </Link>
-              </div>
-            </div>
-          )}
+          {/* Email verification disabled — no email provider configured. */}
 
-          <div className="grid grid-cols-2 gap-px border border-neutral-200 bg-neutral-200 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-px border border-neutral-200 bg-neutral-200 lg:grid-cols-3">
             {[
               ['ROLE', user.role],
-              ['EMAIL', user.emailVerified ? 'VERIFIED' : 'UNVERIFIED'],
               ['ACTIVE SESSIONS', sessions === null ? (sessionsLoading ? '…' : '—') : String(sessions.length)],
               ['TRANSACTIONS', txs === null ? '…' : String(txs.length)],
             ].map(([k, v]) => (
@@ -415,9 +386,6 @@ function DashboardContent() {
                       {c.done ? <Check size={16} strokeWidth={2.5} /> : <Circle size={15} className="text-neutral-300" />}
                       {c.label}
                     </span>
-                    {!c.done && c.go === 'verify-email' && (
-                      <Link href="/verify-email" className="font-medium underline underline-offset-4">Verify</Link>
-                    )}
                     {!c.done && c.go === 'profile' && (
                       <button onClick={() => setSection('profile')} className="cursor-pointer font-medium underline underline-offset-4">
                         Complete
@@ -757,7 +725,6 @@ function DashboardContent() {
             <div className="mono mt-5 space-y-1.5 border-t border-neutral-800 pt-4 text-[11px] tracking-widest text-neutral-500">
               <p>ID — {user.id.slice(0, 8).toUpperCase()}</p>
               <p>ROLE — {user.role}</p>
-              <p>EMAIL — {user.emailVerified ? 'VERIFIED' : 'UNVERIFIED'}</p>
             </div>
           </div>
 
@@ -784,31 +751,7 @@ function DashboardContent() {
       {section === 'security' && (
         <div className="space-y-6">
           <div className="grid items-start gap-6 lg:grid-cols-2">
-            <div className="border border-neutral-200 bg-white p-6">
-              <CardHeader Icon={Mail} kicker="IDENTITY" title="Email verification" />
-              <p className="mt-3 text-[15px] font-semibold">{user.email}</p>
-              <p className="mono mt-1 flex items-center gap-1.5 text-[12px] tracking-widest text-neutral-500">
-                {user.emailVerified ? <BadgeCheck size={14} /> : null}
-                STATUS — {user.emailVerified ? 'VERIFIED' : 'UNVERIFIED'}
-              </p>
-              {!user.emailVerified && (
-                <div className="mt-4 flex gap-2">
-                  <button
-                    onClick={async () => {
-                      const r = await api.resendVerification();
-                      setVerifyMsg(r.devToken ? `DEV token: ${r.devToken}` : 'Verification email queued.');
-                    }}
-                    className="cursor-pointer border border-neutral-950 px-4 py-2 text-[13px] font-medium transition-colors hover:bg-neutral-950 hover:text-white"
-                  >
-                    Resend
-                  </button>
-                  <Link href="/verify-email" className="bg-neutral-950 px-4 py-2 text-[13px] font-medium text-white">
-                    Enter token
-                  </Link>
-                </div>
-              )}
-              {verifyMsg && <p className="mono mt-3 text-[11.5px]">{verifyMsg}</p>}
-            </div>
+            {/* Email verification card removed — no email provider configured. */}
 
             <form onSubmit={changePassword} className="space-y-3.5 border border-neutral-200 bg-white p-6">
               <CardHeader Icon={KeyRound} kicker="ACCESS" title="Change password" />
